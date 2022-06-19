@@ -5,3 +5,5 @@ output
 test_data
 .keras
 experiments
+__pycache__ 
+results

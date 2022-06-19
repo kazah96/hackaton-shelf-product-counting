@@ -1,22 +1,17 @@
-from ast import Sub
 import json
 import csv
 import math
-import os
 from pathlib import Path
 import random
 from matplotlib import pyplot, transforms
 import torch
-import numpy as np
 from torch import nn
-from torch.utils.data import DataLoader, Dataset, Subset
-from torchvision import datasets
 from torchvision import transforms
 from torchvision.models import resnet50
 from PIL import Image
-import torchvision.transforms.functional as F
 
-device = "cpu"
+MODEL_FILE_NAME = 'hackaton_model_2.pth'
+device = "cuda"
 print(f"Using {device} device")
 
 
@@ -105,7 +100,7 @@ class Tester():
             yield cropped_part
 
     def get_over_test_dataset(self, visualise=False):
-        THRESHOLD = 0.80
+        THRESHOLD = 0.85
         queries_path = self.dataset_path / 'queries'
         requests_file_path = self.dataset_path / 'requests.csv'
         output_result_file_path = self.dataset_path / 'output.csv'
@@ -120,37 +115,37 @@ class Tester():
         if self.test_indexes:
             data = [data[i] for i in self.test_indexes]
 
-        for data_index, row in enumerate(data[:1]):
+        for data_index, row in enumerate(data):
             shelf, query, count = row
+            print(shelf, query)
 
             ref_image = get_image(queries_path / query)
 
             side = math.ceil(
-                math.sqrt(self.shelf_product_count(shelf)))
-            fig, m_axs = pyplot.subplots(side, side, figsize=(16, 16))
+                math.sqrt(self.shelf_product_count(shelf) + 1))
 
             if visualise:
+                fig, m_axs = pyplot.subplots(side, side, figsize=(16, 16))
                 m_axs[0, 0].imshow(ref_image)
                 m_axs[0, 0].axis('off')
                 m_axs[0, 0].set_title("REF IMAGE")
 
             ref_image = preprocess(
-                ref_image).unsqueeze(0)
-
-            count = 0
+                ref_image).unsqueeze(0).to(device)
 
             for image_idx, image_from_shelf in enumerate(self.iterate_over_shelf(shelf)):
                 # pyplot.imshow(image_from_shelf)
                 # pyplot.waitforbuttonpress()
 
+                processed_image = preprocess(
+                    image_from_shelf).unsqueeze(0).to(device)
                 cosine_distance = self.get_cosine_for_two_images(
-                    ref_image, preprocess(image_from_shelf).unsqueeze(0))
+                    ref_image, processed_image)
                 is_similar = cosine_distance >= THRESHOLD
                 if is_similar:
                     count += 1
 
                 if visualise:
-
                     x = (image_idx+1) % side
                     y = (image_idx+1) // side
 
@@ -163,9 +158,11 @@ class Tester():
             data[data_index][2] = count
 
             if visualise:
-                pyplot.waitforbuttonpress()
+                pyplot.savefig(
+                    f"results/result_{shelf}_{query}_{MODEL_FILE_NAME}.jpg")
+                # pyplot.waitforbuttonpress()
 
-        with open(output_result_file_path, mode='w') as result_file:
+        with open(output_result_file_path, mode='a') as result_file:
             writer = csv.writer(result_file)
 
             for record in data:
@@ -173,11 +170,10 @@ class Tester():
 
 
 def run():
-    MODEL_FILE_NAME = 'hackaton_model_1.pth'
-
-    tester = Tester("datasets/PublicTestSet",
-                    MODEL_FILE_NAME, test_indexes=[0])
-    tester.get_over_test_dataset(visualise=True)
+    tester = Tester("datasets/PrivateTestSet",
+                    MODEL_FILE_NAME, test_indexes=list(range(100, 182)))
+    tester.get_over_test_dataset(
+        visualise=False)
     # tester.get_over_test_dataset(visualise=False)
 
 
