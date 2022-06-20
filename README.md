@@ -20,3 +20,7 @@ py ./main.py [-v] [-o SUBMISSION_FILE] [-t TESTSET_DIR] [-m MODEL_NAME]
 - `-o` specify filename for output submission file
 - `-t` specify testset directory
 - `-m` specify model name
+
+#### Example
+
+`py ./main.py -v -o submission.csv -t datasets/PrivateTestSet`
