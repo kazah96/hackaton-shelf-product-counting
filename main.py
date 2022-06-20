@@ -1,5 +1,5 @@
 import argparse
-import pytorch_validator
+import tester
 
 DEFAULT_TEST_SET_PATH = 'datasets/PrivateTestSet'
 DEFAULT_MODEL = 'net_mdl_v2.pth'
@@ -14,7 +14,7 @@ if __name__ == "__main__":
     parser.add_argument('-v', '--visualize', action='store_true')
 
     args = parser.parse_args()
-    pytorch_validator.run(test_set_path=args.testset,
+    tester.run(test_set_path=args.testset,
                           model_file_name=args.model,
                           visualize=args.visualize,
                           output_file=args.output,

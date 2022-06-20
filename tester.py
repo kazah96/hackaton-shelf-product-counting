@@ -2,28 +2,14 @@ import json
 import csv
 import math
 from pathlib import Path
-from matplotlib import pyplot, transforms
+from matplotlib import pyplot
 import torch
-from torchvision import transforms
-from torchvision.models import resnet50
-from PIL import Image
+from utils import get_image, preprocess
 
-from triple_model import TripletNet
+from resnet_50_tuned import TripletNet
 
 device = "cuda"
 print(f"Using {device} device")
-
-
-def get_image(name):
-    return Image.open(name).convert('RGB')
-
-
-preprocess = transforms.Compose([
-    transforms.Resize([224, 224]),
-    transforms.ToTensor(),
-    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[
-        0.229, 0.224, 0.225])
-])
 
 
 class Tester():

@@ -2,7 +2,7 @@ import torch
 from torch import nn
 from torch.utils.data import DataLoader, Subset
 
-from triple_model import TripletNet
+from resnet_50_tuned import TripletNet
 from datasets import TripletsDataset
 from utils import get_rand_array
 
