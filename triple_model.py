@@ -3,9 +3,6 @@ from torch import nn
 from torchvision.models import resnet50
 import torchvision.transforms.functional as F
 
-device = "cpu"
-
-
 class TripletNet(nn.Module):
     def __init__(self, model_filename: str, load=True):
         super(TripletNet, self).__init__()
@@ -18,14 +15,12 @@ class TripletNet(nn.Module):
 
         num_features = model.fc.in_features
         model.fc = nn.Linear(num_features, 200)
-        model.to(device)
 
         self.embedding_net = model
 
         if load:
             self.load_from_file()
 
-        self.to(device)
 
     def save_to_file(self):
         torch.save(self.embedding_net.state_dict(),

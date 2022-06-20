@@ -1,16 +1,13 @@
 import json
 from pathlib import Path
-from matplotlib import pyplot, transforms
-from torch.utils.data import DataLoader, Dataset, Subset
-from torchvision import datasets
+from matplotlib import  transforms
+from torch.utils.data import Dataset 
 from torchvision import transforms
-from torchvision.models import resnet50
 from PIL import Image
-import torchvision.transforms.functional as F
 
 DATASET_FILE_NAME = 'dataset_training_actual.json'
 
-class ByJsonDataset(Dataset):
+class TripletsDataset(Dataset):
     def __init__(self) -> None:
         super().__init__()
 

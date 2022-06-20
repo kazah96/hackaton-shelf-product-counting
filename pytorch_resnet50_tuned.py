@@ -1,14 +1,12 @@
 import torch
 from torch import nn
 from torch.utils.data import DataLoader, Subset
-from torchvision.models import resnet50
-import torchvision.transforms.functional as F
 
 from triple_model import TripletNet
-from datasets import ByJsonDataset
+from datasets import TripletsDataset
 from utils import get_rand_array
 
-MODEL_FILE_NAME = 'hackaton_model_2.pth'
+MODEL_FILE_NAME = 'net_mdl_v4.pth'
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 print(f"Using {device} device")
@@ -22,8 +20,7 @@ class Trainer():
         self.batch_size = batch_size
         self.iterations = iterations  
 
-        self.loss_function = nn.TripletMarginWithDistanceLoss()
-        # self.loss_function = nn.TripletMarginLoss()
+        self.loss_function = nn.TripletMarginLoss()
         self.optimizer = torch.optim.SGD(
             self.triple_net.embedding_net.fc.parameters(), lr=0.001, momentum=0.9)
 
@@ -34,9 +31,6 @@ class Trainer():
 
         for batch, d in enumerate(data_loader):
             anchor_image_batch, positive_image_batch, negative_image_batch = d
-
-            # Showin images
-            # show([anchor_image_batch[0], positive_image_batch[0], negative_image_batch[0]])
 
             anchor_image_batch = anchor_image_batch.to(device)
             positive_image_batch = positive_image_batch.to(device)
@@ -54,7 +48,7 @@ class Trainer():
 
     def run(self):
         MAX_ITERATIONS = self.batch_size * self.iterations
-        dataset = ByJsonDataset()
+        dataset = TripletsDataset()
         dataset_size = len(dataset)
 
         for t in range(self.epochs):

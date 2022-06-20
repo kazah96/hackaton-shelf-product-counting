@@ -2,15 +2,14 @@ import json
 import csv
 import math
 from pathlib import Path
-import random
 from matplotlib import pyplot, transforms
 import torch
-from torch import nn
 from torchvision import transforms
 from torchvision.models import resnet50
 from PIL import Image
 
-MODEL_FILE_NAME = 'hackaton_model_2.pth'
+from triple_model import TripletNet
+
 device = "cuda"
 print(f"Using {device} device")
 
@@ -27,47 +26,17 @@ preprocess = transforms.Compose([
 ])
 
 
-class TripletNet(nn.Module):
-    def __init__(self, model_filename: str):
-        super(TripletNet, self).__init__()
-        self.model_filename = model_filename
-        model = resnet50(pretrained=True)
-        for param in model.parameters():
-            param.requires_grad = False
-
-        num_features = model.fc.in_features
-        model.fc = nn.Linear(num_features, 1000)
-        model.to(device)
-
-        self.embedding_net = model
-
-        self.to(device)
-
-    def forward(self, x1, x2, x3):
-        output1 = self.embedding_net(x1)
-        output2 = self.embedding_net(x2)
-        output3 = self.embedding_net(x3)
-        return output1, output2, output3
-
-    def get_embedding(self, x):
-        return self.embedding_net(x)
-
-    def load_from_file(self):
-        self.embedding_net.load_state_dict(torch.load(self.model_filename))
-
-
-def get_rand_array(count, max_number):
-    return [random.randint(0, max_number) for i in range(count)]
-
-
 class Tester():
-    def __init__(self, dataset_pathname, model_filename, test_indexes=None) -> None:
-        self.net = TripletNet(model_filename)
-        self.net.eval()
+    def __init__(self, dataset_pathname, model_filename, submission_file_name='output.csv', test_indexes=None) -> None:
+        self.submission_file_name = submission_file_name
         self.test_indexes = test_indexes
-
         self.dataset_path = Path(Path.cwd()) / dataset_pathname
         self.shelves_path = self.dataset_path / 'shelves'
+        self.model_filename = model_filename
+
+        self.net = TripletNet(model_filename, load=True)
+        self.net.to(device)
+        self.net.eval()
 
         with open(self.dataset_path / 'shelves_info.json', mode='r') as file:
             inp = file.read()
@@ -100,10 +69,10 @@ class Tester():
             yield cropped_part
 
     def get_over_test_dataset(self, visualise=False):
-        THRESHOLD = 0.85
+        THRESHOLD = 0.83
         queries_path = self.dataset_path / 'queries'
         requests_file_path = self.dataset_path / 'requests.csv'
-        output_result_file_path = self.dataset_path / 'output.csv'
+        output_result_file_path = self.dataset_path / self.submission_file_name
 
         data = []
 
@@ -117,7 +86,7 @@ class Tester():
 
         for data_index, row in enumerate(data):
             shelf, query, count = row
-            print(shelf, query)
+            print(f"shelf: {shelf}, query: {query}")
 
             ref_image = get_image(queries_path / query)
 
@@ -134,9 +103,6 @@ class Tester():
                 ref_image).unsqueeze(0).to(device)
 
             for image_idx, image_from_shelf in enumerate(self.iterate_over_shelf(shelf)):
-                # pyplot.imshow(image_from_shelf)
-                # pyplot.waitforbuttonpress()
-
                 processed_image = preprocess(
                     image_from_shelf).unsqueeze(0).to(device)
                 cosine_distance = self.get_cosine_for_two_images(
@@ -159,23 +125,21 @@ class Tester():
 
             if visualise:
                 pyplot.savefig(
-                    f"results/result_{shelf}_{query}_{MODEL_FILE_NAME}.jpg")
-                # pyplot.waitforbuttonpress()
+                    f"results/result_{shelf}_{query}_{self.model_filename}.jpg")
+                pyplot.waitforbuttonpress()
 
-        with open(output_result_file_path, mode='a') as result_file:
+        with open(output_result_file_path, mode='a', newline="") as result_file:
             writer = csv.writer(result_file)
 
             for record in data:
                 writer.writerow(record)
 
 
-def run():
-    tester = Tester("datasets/PrivateTestSet",
-                    MODEL_FILE_NAME, test_indexes=list(range(100, 182)))
+def run(test_set_path, output_file, model_file_name, visualize=True, test_indexes=None):
+    print(f"Running over ${test_set_path}")
+    print(f"Model using ${model_file_name}")
+
+    tester = Tester(test_set_path,
+                    model_file_name, submission_file_name=output_file, test_indexes=test_indexes)
     tester.get_over_test_dataset(
-        visualise=False)
-    # tester.get_over_test_dataset(visualise=False)
-
-
-if __name__ == "__main__":
-    run()
+        visualise=visualize)
