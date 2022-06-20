@@ -72,7 +72,7 @@ class Tester():
         THRESHOLD = 0.83
         queries_path = self.dataset_path / 'queries'
         requests_file_path = self.dataset_path / 'requests.csv'
-        output_result_file_path = self.dataset_path / self.submission_file_name
+        output_result_file_path = Path(Path.cwd()) / self.submission_file_name
 
         data = []
 
